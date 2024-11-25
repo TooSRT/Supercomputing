@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,c++,git,images,video,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,c++,git,images,video,jupyternotebooks
 
+*.ppm 
+
 ### C++ ###
 # Prerequisites
 *.d
@@ -316,6 +318,7 @@ pyrightconfig.json
 *.webm
 
 ### VisualStudioCode ###
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
