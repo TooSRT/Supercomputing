@@ -117,31 +117,39 @@ int main (int argc, char * * argv){
 
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-    int nlocal;
-    int nglobal=6; //Number of CPU 
     
     int nb_iter, width, height; /* Degree of precision, dimensions of the image */
     double x_min, x_max, y_min, y_max; /* Bounds of representation */
     char * path; /* File destination */
     Image im;   
 
-    //height=height/size*size;
+    int loc_height = height/comm_size * comm_size; //height of the image proportional to the number of CPU
+    
+    //Initialize pointers for pixel allocations
+    char *local_pixel = (char *)malloc(sizeof(char)* width * loc_height); //allocate memory for each part of the image
+    
+    char *total_pixel = NULL;
 
-    //Give task to each processors
-    for (int i=0; i<nglobal; i++){
-        if (rank=i){
-
-        }
+    //allocate memory for the final image (assembled by CPU 0)
+    if (rank==0){
+        total_pixel = (char *)malloc(sizeof(char)* width * loc_height * comm_size);
     }
 
-    //All images are send to CPU 0
-    //MPI_Gather
+    //Give task to each processors
+    //Analysis et intialiase in function of the part of the image treated
+    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & loc_height, & path);
+    initialization (& im, width, loc_height);
+    printf("Processus %d: process lines [%d, %d] with y_min = %f and y_max = %f\n", rank, rank * loc_height, (rank + 1) * loc_height - 1, y_min, y_max);
+    Compute (&im, nb_iter, x_min, x_max, y_min, y_max); //Compute the part of the image associated
 
-    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
-    initialization (& im, width, height);
-    Compute (& im, nb_iter, x_min, x_max, y_min, y_max);
-    save (& im, path);
+    
+    //All images are send to CPU 0 to be assembled 
+    //MPI_Gather
+    MPI_Gather(local_pixel, width * height, MPI_CHAR, total_pixel, width * height, MPI_CHAR, 0, MPI_COMM_WORLD);
+    
+    save (&im, path);
+    free(total_pixel);
+    free(local_pixel);
 
     MPI_Finalize();
 
