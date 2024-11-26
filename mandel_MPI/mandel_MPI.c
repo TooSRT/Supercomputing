@@ -123,8 +123,12 @@ int main (int argc, char * * argv){
     char * path; /* File destination */
     Image im;   
 
-    int loc_height = height/comm_size * comm_size; //height of the image proportional to the number of CPU
-    
+    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
+
+    // add a check-up to see if height is a multiple of 6
+    //ajouter *comm_size ? 
+    int loc_height = height/comm_size; //height of each local image proportional to the number of CPU
+
     //Initialize pointers for pixel allocations
     char *local_pixel = (char *)malloc(sizeof(char)* width * loc_height); //allocate memory for each part of the image
     
@@ -136,19 +140,40 @@ int main (int argc, char * * argv){
     }
 
     //Give task to each processors
-    //Analysis et intialiase in function of the part of the image treated
-    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & loc_height, & path);
+    //Initialize each im struct associated to it's CPU
     initialization (& im, width, loc_height);
-    printf("Processus %d: process lines [%d, %d] with y_min = %f and y_max = %f\n", rank, rank * loc_height, (rank + 1) * loc_height - 1, y_min, y_max);
-    Compute (&im, nb_iter, x_min, x_max, y_min, y_max); //Compute the part of the image associated
+
+    //Size of each interval to compute for each processors
+    int size_y = y_max - y_min; 
+    
+    //Check that total size is divisible by the number of CPU 
+    if (height % comm_size != 0){
+        if (rank==0){
+        fprintf(stderr, "Error: the total height is not divisible by the number of CPU (comm_size).\n");
+        }
+        MPI_Finalize();
+        return EXIT_FAILURE;
+    }
+
+    //y coordinates for each CPU 
+    int local_ymin = size_y * rank;  
+    int local_ymax = size_y * (rank + 1); 
+
+    
+    printf("Processus %d: process lines [%d, %d] with y_min = %f and y_max = %f\n", rank, rank*loc_height, (rank + 1)*loc_height - 1, y_min, y_max);
+    
+    Compute (&im, nb_iter, x_min, x_max, local_ymin, local_ymax); //Compute the part of the image associated
 
     
     //All images are send to CPU 0 to be assembled 
     //MPI_Gather
-    MPI_Gather(local_pixel, width * height, MPI_CHAR, total_pixel, width * height, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(local_pixel, width * loc_height, MPI_CHAR, total_pixel, width * loc_height, MPI_CHAR, 0, MPI_COMM_WORLD);
     
-    save (&im, path);
-    free(total_pixel);
+    if (rank == 0){
+        save(&im, path); //save final image on CPU 0
+        free(total_pixel); //Free the memory
+    }
+
     free(local_pixel);
 
     MPI_Finalize();
