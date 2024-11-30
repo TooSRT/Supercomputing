@@ -11,6 +11,7 @@ int main (int argc, char * * argv){
     
     MPI_Init(&argc, &argv);
     MPI_Status status;
+    MPI_Request request;
 
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -57,7 +58,7 @@ int main (int argc, char * * argv){
         //receive the number of line from other CPU (height - height/comm_size)
         for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
             //use a tag associated to each line 
-            MPI_Recv(im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            MPI_Irecv(im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
             
             int line_index = status.MPI_TAG; //Line index received via tag
             memcpy(final_im.pixels + line_index * width, im.pixels, width); 
@@ -81,7 +82,7 @@ int main (int argc, char * * argv){
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymax);
 
             //use the line number as a tag
-            MPI_Send(im.pixels, width, MPI_CHAR, 0, rank + i*comm_size, MPI_COMM_WORLD);      
+            MPI_iSend(im.pixels, width, MPI_CHAR, 0, rank + i*comm_size, MPI_COMM_WORLD, &request);      
         }
     }
     
