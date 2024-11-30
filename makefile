@@ -56,7 +56,7 @@ run_mandel_omp_static: $(MANDEL_OMP_STATIC_EXEC)
 run_mandel_omp_dynamic: $(MANDEL_OMP_DYNAMIC_EXEC)
 	./$(MANDEL_OMP_DYNAMIC_EXEC) -f mandel_omp_dynamic.ppm
 
-run: run_mandel run_mandel_mpi run_mandel_mpi2 run_mandel_omp_static run_mandel_omp_dynamic
+run: run_mandel run_mandel_mpi run_mandel_mpi2 #run_mandel_omp_static run_mandel_omp_dynamic
 
 clean:
 	rm -f $(MANDEL_EXEC) $(MANDEL_MPI_EXEC) $(MANDEL_MPI2_EXEC) \

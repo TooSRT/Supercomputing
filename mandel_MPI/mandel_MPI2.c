@@ -34,11 +34,11 @@ int main (int argc, char * * argv){
         return EXIT_FAILURE;
     }
 
-    clock_gettime (CLOCK_MONOTONIC , & tstart ) ;
+    double local_ymin;
+    double local_ymax;
+    initialization(&im, width, 1); //we compute lines so size 1
 
-    double local_ymin = y_min;
-    double local_ymax = y_min;
-    initialization(&im, width, 1); //we compute line so size 1
+    clock_gettime (CLOCK_MONOTONIC , & tstart ) ;
 
     //CPU 0 compute lines and put them together
     if (rank==0){
@@ -47,7 +47,8 @@ int main (int argc, char * * argv){
         initialization(&final_im, width, height);
         
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height; //k+i*n
+            //we "normalize" local_ymin
+            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
             local_ymax = local_ymin; //we compute only one line so y_min=y_max
             
             //Compute the line associated to CPU 0
@@ -58,24 +59,25 @@ int main (int argc, char * * argv){
         for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
             //use a tag associated to each line 
             MPI_Recv(im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            int line_index = status.MPI_TAG; // Line index received via tag
+            
+            int line_index = status.MPI_TAG; //Line index received via tag
             memcpy(final_im.pixels + line_index * width, im.pixels, width); 
         }
-
-        //Save the final image
-        save(&final_im, path);
-        free(final_im.pixels);
 
         clock_gettime(CLOCK_MONOTONIC, &tend);
         double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9;
         printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
+        
+        //Save the final image
+        save(&final_im, path);
+        free(final_im.pixels);
     }
     
     //other CPU computes lines and send them to CPU 0 
     else{
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
             local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height;
-            local_ymax = y_min; //we compute only one line so y_min=y_max
+            local_ymax = local_ymin; //we compute only one line so local_ymax=local_ymin
 
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymax);
 
