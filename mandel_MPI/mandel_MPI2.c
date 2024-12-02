@@ -42,18 +42,20 @@ int main (int argc, char * * argv){
 
     //CPU 0 compute lines and put them together
     if (rank==0){
-        // Initialize final image for CPU 0
+        //Initialize final image for CPU 0
         Image final_im;
         initialization(&final_im, width, height);
         
+        //line computed by CPU0
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
+            local_ymin = y_min + ( i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
             local_ymax = local_ymin; //we compute only one line so y_min=y_max
             
             //Compute the line associated to CPU 0
             Compute (&im, nb_iter, x_min, x_max, local_ymin, local_ymax); //Compute the part of the image associated
             memcpy(final_im.pixels + (rank + i * comm_size) * width, im.pixels, width);
-        }
+        }//RETIRER MEMPCY ET REFAIRE UNE BOUCLE EN DEHORS DE CE BLOCK D'INSTRUCTION
+
         //receive the number of line from other CPU (height - height/comm_size)
         for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
             //use a tag associated to each line 
@@ -67,7 +69,7 @@ int main (int argc, char * * argv){
         double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9;
         printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
         
-        //Save the final image
+        //Save the final image and free the memory associated
         save(&final_im, path);
         free(final_im.pixels);
     }

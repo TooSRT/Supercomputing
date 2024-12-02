@@ -37,6 +37,11 @@ int main (int argc, char * * argv){
     clock_gettime (CLOCK_MONOTONIC , & tstart ) ;
     int loc_height = height/comm_size; //height of each local image proportional to the number of CPU
 
+    //use Bcast to send info to each proc instead ????
+    //use a scatter to spread the info and don't use two im ?
+    //use a gatherV ??
+    //use MPI Barier to synchronize everybody then MPI finalysze to debug (we see if we got an error at this point in the code)
+
     //Give task to each processors
     //Initialize each im struct associated to it's CPU
     initialization (& im, width, loc_height);
@@ -45,7 +50,7 @@ int main (int argc, char * * argv){
     double size_y = (y_max - y_min)/comm_size; 
 
     //y coordinates for each CPU 
-    //Problem when we have negative sign it seems
+    //Problem with the local_ymin/ymax we need to invert them in compute in order to work
     double local_ymin = y_min + (rank) * (size_y);
     double local_ymax = local_ymin + size_y;
 
@@ -56,17 +61,18 @@ int main (int argc, char * * argv){
     if (rank==0){
         initialization(&final_im,width,height);
     }
-    //collect all lines from other CPU with gather
+    //collect all lines from other CPU with gather and send them in final_im
     MPI_Gather(im.pixels, width * loc_height, MPI_CHAR, final_im.pixels, width * loc_height, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     if (rank==0){
-        save(&final_im, path); //save final image on CPU 0
-
-        free(final_im.pixels); //Free the memory
         //Measure execution time
         clock_gettime(CLOCK_MONOTONIC, &tend);
         double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9f;
         printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
+        
+        save(&final_im, path); //save final image on CPU 0
+
+        free(final_im.pixels); //Free the memory
     }
     free(im.pixels);
 
