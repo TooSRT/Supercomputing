@@ -49,7 +49,7 @@ int main (int argc, char * * argv){
 
         for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
             //use a tag associated to each line 
-            MPI_Irecv(im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+            MPI_Irecv(final_im.pixels + status.MPI_TAG * width, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
         }   
         
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
@@ -63,13 +63,9 @@ int main (int argc, char * * argv){
         //receive the number of line from other CPU (height - height/comm_size)
 
             //do something else
-            
-            
+             
         MPI_Wait(&request, &status); //Wait for the message to complete
-
-        int line_index = status.MPI_TAG; //Line index received via tag
-        memcpy(final_im.pixels + line_index * width, im.pixels, width); 
-
+        
         clock_gettime(CLOCK_MONOTONIC, &tend);
         double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9;
         printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);

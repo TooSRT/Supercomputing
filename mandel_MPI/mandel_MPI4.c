@@ -56,9 +56,9 @@ int main (int argc, char * * argv){
             Compute(&im,nb_iter, x_min, x_max, local_ymin, local_ymax);
             memcpy(final_im.pixels + (rank+ i * comm_size) * width, im.pixels, width); //store the data directly into final_image 
         }
+        MPI_Recv(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 1, 1, MPI_COMM_WORLD, &status); //receive the packed data computed by every other CPU than 0
         int position = 0; 
 
-        MPI_Recv(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 1, 1, MPI_COMM_WORLD, &status); //receive the packed data computed by every other CPU than 0
         MPI_Unpack(packed_im.pixels, width*(height-height/comm_size), &position, final_im.pixels, (height - height / comm_size), MPI_CHAR, MPI_COMM_WORLD); //unpack the data
 
         //measure time taken

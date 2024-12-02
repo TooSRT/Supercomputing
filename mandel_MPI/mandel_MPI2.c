@@ -51,18 +51,19 @@ int main (int argc, char * * argv){
             local_ymin = y_min + ( i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
             local_ymax = local_ymin; //we compute only one line so y_min=y_max
             
+            //we adjust im.pixels so the lines are direclty computed in final_im.pixels
+            //im.pixels = final_im.pixels + (i * comm_size) * width; //revoir comment libérer la mémoire avec cett méthode
+
             //Compute the line associated to CPU 0
             Compute (&im, nb_iter, x_min, x_max, local_ymin, local_ymax); //Compute the part of the image associated
             memcpy(final_im.pixels + (rank + i * comm_size) * width, im.pixels, width);
-        }//RETIRER MEMPCY ET REFAIRE UNE BOUCLE EN DEHORS DE CE BLOCK D'INSTRUCTION
-
-        //receive the number of line from other CPU (height - height/comm_size)
+        }
+        // refaire un block d'instruction en dehors de celui ci pour les performances ?
+        
+        //receive the number of line from other CPU (total_lines_received= height - height/comm_size)
         for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
-            //use a tag associated to each line 
-            MPI_Recv(im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            
-            int line_index = status.MPI_TAG; //Line index received via tag
-            memcpy(final_im.pixels + line_index * width, im.pixels, width); 
+            //use a tag associated to each line, data received are sent into the final_im
+            MPI_Recv(final_im.pixels + status.MPI_TAG * width, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         }
 
         clock_gettime(CLOCK_MONOTONIC, &tend);
