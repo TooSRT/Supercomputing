@@ -80,7 +80,7 @@ int main (int argc, char * * argv){
             MPI_Pack(im.pixels, width, MPI_CHAR, packed_im.pixels, width * (height - height / comm_size), &position, MPI_COMM_WORLD); //Pack all the computed lines
         }
 
-        //Only CPU 0 send tha packed lines
+        //Only CPU 0 send the packed lines
         if (rank==1){
             MPI_Send(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
         }

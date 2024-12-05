@@ -47,6 +47,7 @@ int main (int argc, char * * argv){
         initialization(&final_im, width, height);
         
         //line computed by CPU0
+        //don't need loop for CPU 0,just compute the block in one time so we can copy directly the memory into final_im
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
             local_ymin = y_min + ( i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
             local_ymax = local_ymin; //we compute only one line so y_min=y_max
