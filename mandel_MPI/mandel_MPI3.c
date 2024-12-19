@@ -42,57 +42,63 @@ int main (int argc, char * * argv){
     clock_gettime (CLOCK_MONOTONIC , & tstart ) ;
 
     //CPU 0 compute lines and put them together
-    if (rank==0){
-        // Initialize final image for CPU 0
-        Image final_im;
-        initialization(&final_im, width, height);
+if (rank == 0) {
+    Image final_im;
+    initialization(&final_im, width, height);
+    // Calcul local pour les lignes assignées au processus 0
+    for (int i = 0; i < (height / comm_size); i++) {
+        local_ymin = y_min + (i * comm_size) * (y_max - y_min) / height;
 
-        for (int i=0; i<(height - height/comm_size); i++){ //because CPU0 already compute height/comm_size line
-            //use a tag associated to each line 
-            MPI_Irecv(final_im.pixels + status.MPI_TAG * width, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
-        }   
-        
-        for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
-            local_ymax = local_ymin; //we compute only one line so y_min=y_max
-            
-            //Compute the line associated to CPU 0
-            Compute (&im, nb_iter, x_min, x_max, local_ymin, local_ymax); //Compute the part of the image associated
-            memcpy(final_im.pixels + (rank + i * comm_size) * width, im.pixels, width);
-        }
-        //receive the number of line from other CPU (height - height/comm_size)
+        // Calcul de la ligne
+        Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin);
 
-            //do something else
-             
-        MPI_Wait(&request, &status); //Wait for the message to complete
-        
-        clock_gettime(CLOCK_MONOTONIC, &tend);
-        double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9;
-        printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
-        
-        //Save the final image
-        save(&final_im, path);
-        free(final_im.pixels);
-    }
-    
-    //other CPU computes lines and send them to CPU 0 
-    else{
-        for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height;
-            local_ymax = local_ymin; //we compute only one line so local_ymax=local_ymin
-
-            Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymax);
-
-            //use the line number as a tag
-            MPI_Isend(im.pixels, width, MPI_CHAR, 0, rank + i*comm_size, MPI_COMM_WORLD, &request);      
-            
-            //do something else
-
-            //
-            MPI_Wait(&request, &status); // Wait for the message to complete
-
+        // Placement correct dans l'image finale
+        for (int j = 0; j < width; j++) {
+            final_im.pixels[i * comm_size * width + j] = im.pixels[j];
         }
     }
+
+    // Réception des lignes des autres processus
+    MPI_Request recv_requests[height - height / comm_size];
+    MPI_Status recv_status[height - height / comm_size];
+    for (int i = 0; i < (height - height / comm_size); i++) {
+        MPI_Irecv(final_im.pixels, width, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &recv_requests[i]);
+    }
+
+    // Synchronisation des réceptions et placement des lignes
+    MPI_Waitall(height - height / comm_size, recv_requests, recv_status);
+    for (int i = 0; i < (height - height / comm_size); i++) {
+        int line_tag = recv_status[i].MPI_TAG; // Ligne reçue
+        for (int j = 0; j < width; j++) {
+            final_im.pixels[line_tag * width + j] = im.pixels[j];
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9;
+    printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
+
+    // Sauvegarder l'image finale et libérer la mémoire
+    save(&final_im, path);
+    free(final_im.pixels);
+} else {
+    // Calcul et envoi pour les autres processus
+    MPI_Request send_requests[height / comm_size];
+    for (int i = 0; i < (height / comm_size); i++) {
+        local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height;
+
+        // Calcul de la ligne
+        Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin);
+
+        // Envoi de la ligne avec le tag correct
+        MPI_Isend(im.pixels, width, MPI_CHAR, 0, rank + i * comm_size, MPI_COMM_WORLD, &send_requests[i]);
+    }
+
+    // Synchronisation des envois
+    MPI_Waitall(height / comm_size, send_requests, MPI_STATUSES_IGNORE);
+}
+
+
     
     free(im.pixels); //free the memory every time we send a line
 

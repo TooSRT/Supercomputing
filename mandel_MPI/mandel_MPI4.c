@@ -81,11 +81,10 @@ int main (int argc, char * * argv){
         }
 
         //Only CPU 0 send the packed lines
-        if (rank==1){
-            MPI_Send(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
-        }
-        free(packed_im.pixels); //free the memory for packed lines
+        MPI_Send(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
     }
+    free(packed_im.pixels); //free the memory for packed lines
+
     free(im.pixels); //free the memory every time we send a line
 
     MPI_Finalize();
