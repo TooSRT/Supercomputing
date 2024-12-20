@@ -35,7 +35,6 @@ int main (int argc, char * * argv){
     }
 
     double local_ymin;
-    double local_ymax;
     double size_y = (y_max-y_min)/height; //portion of lines computed by each line
 
     initialization(&im, width, 1); //we compute lines so size 1
@@ -51,15 +50,22 @@ int main (int argc, char * * argv){
 
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
             local_ymin = y_min + (i * comm_size) * size_y; //rank == 0
-            local_ymax = local_ymin;
 
-            Compute(&im,nb_iter, x_min, x_max, local_ymin, local_ymax);
+            Compute(&im,nb_iter, x_min, x_max, local_ymin, local_ymin);
             memcpy(final_im.pixels + (rank+ i * comm_size) * width, im.pixels, width); //store the data directly into final_image 
         }
-        MPI_Recv(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 1, 1, MPI_COMM_WORLD, &status); //receive the packed data computed by every other CPU than 0
-        int position = 0; 
 
-        MPI_Unpack(packed_im.pixels, width*(height-height/comm_size), &position, final_im.pixels, (height - height / comm_size), MPI_CHAR, MPI_COMM_WORLD); //unpack the data
+        //MPI_unpack cannot place directly all the line into the good position so we usea loop
+        for (int proc=1; proc<comm_size; proc++){
+            int position = 0; //reset position after each processor send their lines
+            MPI_Recv(packed_im.pixels, width * (height/comm_size), MPI_PACKED, proc, 1, MPI_COMM_WORLD, &status); //receive the packed data computed by every other CPU than 0
+
+            for (int i=0; i<(height/comm_size); i++){ //height/comm_size compute by each CPU
+                MPI_Unpack(packed_im.pixels, width*(height/comm_size), &position, final_im.pixels + (proc + i * comm_size) * width, width, MPI_CHAR, MPI_COMM_WORLD); //unpack the data
+            //final_im.pixels + (proc + i * comm_size) * width use to place correctly the line in the good spot
+            //we unpack a number of "width" pixels everytime
+            }
+        } 
 
         //measure time taken
         clock_gettime(CLOCK_MONOTONIC, &tend);
@@ -74,14 +80,13 @@ int main (int argc, char * * argv){
 
         for (int i=0; i<(height/comm_size); i++){
             local_ymin = y_min + (rank + i * comm_size) * size_y; //k+i*n
-            local_ymax = local_ymin;
 
-            Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymax); //compute lines for all CPU different from 0
+            Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //compute lines for all CPU different from 0
             MPI_Pack(im.pixels, width, MPI_CHAR, packed_im.pixels, width * (height - height / comm_size), &position, MPI_COMM_WORLD); //Pack all the computed lines
         }
 
-        //Only CPU 0 send the packed lines
-        MPI_Send(packed_im.pixels, (height-height/comm_size), MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
+        //Only CPU 1 send the packed lines to CPU 0
+        MPI_Send(packed_im.pixels, position, MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
     }
     free(packed_im.pixels); //free the memory for packed lines
 
