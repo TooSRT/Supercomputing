@@ -22,8 +22,11 @@ int main (int argc, char * * argv){
 
     //mesure time taken
     struct timespec tstart , tend ;
-
-    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
+    
+    //only CPU 0 save the data so only him need the analysis function
+    if (rank==0){   
+        analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
+    } 
 
     //Check that total size is divisible by the number of CPU 
     if (height % comm_size != 0){
@@ -53,10 +56,6 @@ int main (int argc, char * * argv){
             //Compute the line into the image line buffer
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //local_ymax = local_ymin because line are size 1 in height
 
-            //Write directly into the correct location in final_im
-            //for (int j = 0; j < width; j++) {
-            //    final_im.pixels[i * comm_size * width + j] = im.pixels[j];
-            //}
             memcpy(final_im.pixels + (i * comm_size * width), im.pixels, width);
         }
                 

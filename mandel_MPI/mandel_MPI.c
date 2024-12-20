@@ -37,11 +37,6 @@ int main (int argc, char * * argv){
     clock_gettime (CLOCK_MONOTONIC , & tstart ) ;
     int loc_height = height/comm_size; //height of each local image proportional to the number of CPU
 
-    //use Bcast to send info to each proc instead ????
-    //use a scatter to spread the info and don't use two im ?
-    //use a gatherV ??
-    //use MPI Barier to synchronize everybody then MPI finalysze to debug (we see if we got an error at this point in the code)
-
     //Give task to each processors
     //Initialize each im struct associated to it's CPU
     initialization (& im, width, loc_height);
