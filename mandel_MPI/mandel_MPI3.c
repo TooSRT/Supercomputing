@@ -44,6 +44,7 @@ int main (int argc, char **argv){
     double size_y = (y_max - y_min)/height;
 
     if (rank == 0){
+        //start the measure time taken and initialize final image on CPU 0
         initialization(&final_im, width, height);
         clock_gettime(CLOCK_MONOTONIC, &tstart);
     }
@@ -67,24 +68,24 @@ int main (int argc, char **argv){
 
     //receive lines
     if (rank==0){
-        for (int proc = 1; proc<comm_size; proc++){
-            for (int i = 0; i <height/comm_size; i++){
+        for (int proc = 1; proc<comm_size; proc++){ //use the processor as a tag
+            for (int i = 0; i <height/comm_size; i++){ //loop on the number of line computed by each processors
+                //receive lines from others processors into CPU 0
                 MPI_Irecv(final_im.pixels + (proc + i * comm_size) * width, width, MPI_CHAR, proc, proc + i * comm_size, MPI_COMM_WORLD, &request_recv);
                 
-                //wait for the reception of the line
-                MPI_Wait(&request_recv, &status); // Wait for the reception to complete
+                MPI_Wait(&request_recv, &status); //Wait for the reception to complete
             }
         }
-
+        //measure time
         clock_gettime(CLOCK_MONOTONIC, &tend);
         double elapsed_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec) / 1e9f;
         printf("Elapsed time (seconds) with MPI: %2.9lf\n", elapsed_time);
 
-        save(&final_im, path);
-        free(final_im.pixels);
+        save(&final_im, path); //save the final image
+        free(final_im.pixels); //free the memory associated to the final image
     }
 
-    free(im.pixels);
+    free(im.pixels); //free the memory of the line computed
     MPI_Finalize();
     return 0;
 }

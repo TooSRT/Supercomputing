@@ -5,7 +5,7 @@ executable = "./mandel.out"  # Chemin vers l'exécutable mandel.out
 image_width = 1024
 image_height = 768
 output_file = "/tmp/mandel.ppm"
-iterations_list = [100, 1000, 10000, 50000, 100000, 1000000]  # Différentes valeurs d'itérations
+iterations_list = [100, 1000, 10000, 50000, 100000, 200000]  # Différentes valeurs d'itérations
 
 # Exécuter le programme avec différentes valeurs d'itérations
 for iterations in iterations_list:
