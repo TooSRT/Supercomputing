@@ -12,7 +12,7 @@ int main(int argc,char **argv){
     char * path; /* File destination */
     Image final_im;
 
-    int chunk_size = 1; //chosse chunck_size for the schedule
+    int chunk_size = 1; //choose chunck_size for the schedule
 
     struct timespec tstart , tend ;
 

@@ -16,7 +16,7 @@ int main(int argc,char **argv){
 
     analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
     
-    int chunk_size=1; //chosse chunck_size for the schedule
+    int chunk_size=1; //choose chunck_size for the schedule
 
     //initialize local image
     initialization (& final_im, width, height);

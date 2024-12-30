@@ -63,7 +63,7 @@ int main (int argc, char * * argv){
         for (int proc=1; proc<comm_size; proc++){ //each processor send their line, we use it as a tag also
             for (int i=0; i<(height/comm_size); i++){ 
                 //use a tag associated to each line, data received are sent into the final_im
-                MPI_Recv(final_im.pixels + (i*comm_size + proc)*width, width, MPI_CHAR, proc, 0, MPI_COMM_WORLD, &status);
+                MPI_Recv(final_im.pixels + (i * comm_size + proc) * width, width, MPI_CHAR, proc, i, MPI_COMM_WORLD, &status);
             }
         }
         clock_gettime(CLOCK_MONOTONIC, &tend);
@@ -84,7 +84,7 @@ int main (int argc, char * * argv){
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin);
 
             //Send computed line direclty
-            MPI_Send(im.pixels, width, MPI_CHAR, 0, 0, MPI_COMM_WORLD);      
+            MPI_Send(im.pixels, width, MPI_CHAR, 0, i, MPI_COMM_WORLD);
         }
     }
     

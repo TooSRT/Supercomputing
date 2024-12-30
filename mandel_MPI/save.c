@@ -42,7 +42,7 @@ int main (int argc, char * * argv){
 
     //CPU 0 compute lines and put them together
     if (rank==0){
-        //Initialize final image for CPU 0
+        // Initialize final image for CPU 0
         Image final_im;
         initialization(&final_im, width, height);
 
@@ -51,7 +51,7 @@ int main (int argc, char * * argv){
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
             local_ymin = y_min + (i * comm_size) * size_y; //rank == 0
 
-            Compute(&im,nb_iter, x_min, x_max, local_ymin, local_ymin); //compute lines by CPU 0
+            Compute(&im,nb_iter, x_min, x_max, local_ymin, local_ymin);
             memcpy(final_im.pixels + (rank+ i * comm_size) * width, im.pixels, width); //store the data directly into final_image 
         }
 
@@ -76,17 +76,16 @@ int main (int argc, char * * argv){
         free(final_im.pixels); //free final_im memory
     }
     else{
-        int position = 0; // initialize position for MPI_pack 
+        int position = 0;
 
         for (int i=0; i<(height/comm_size); i++){
             local_ymin = y_min + (rank + i * comm_size) * size_y; //k+i*n
 
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //compute lines for all CPU different from 0
-            MPI_Pack(im.pixels, width, MPI_CHAR, packed_im.pixels, width * (height - height / comm_size), &position, MPI_COMM_WORLD); //Pack all the computed lines into packed_im.pixels
+            MPI_Pack(im.pixels, width, MPI_CHAR, packed_im.pixels, width * (height - height / comm_size), &position, MPI_COMM_WORLD); //Pack all the computed lines
         }
 
         //Only CPU 1 send the packed lines to CPU 0
-        //maybe all cpu send data and not the one only ?
         MPI_Send(packed_im.pixels, position, MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
     }
     free(packed_im.pixels); //free the memory for packed lines

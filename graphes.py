@@ -1,35 +1,45 @@
 import subprocess
 
-# Configuration
-executable = "./mandel.out"  # Chemin vers l'exécutable mandel.out
-image_width = 1024
-image_height = 768
-output_file = "/tmp/mandel.ppm"
-iterations_list = [100, 1000, 10000, 50000, 100000, 200000]  # Différentes valeurs d'itérations
+# Path to your compiled MPI program
+program_path = './mandel_MPI3.out'
 
-# Exécuter le programme avec différentes valeurs d'itérations
-for iterations in iterations_list:
-    print(f"Testing with {iterations} iterations:")
-    try:
-        # Commande pour exécuter le fichier mandel avec les paramètres appropriés
-        command = [
-            executable,
-            "-d", str(image_width), str(image_height),
-            "-n", str(iterations),
-            "-f", output_file
-        ]
-        print(f"Running: {' '.join(command)}")
+# Range of processes to test (from 1 to 32)
+process_range = range(1, 33)
 
-        # Exécuter la commande et capturer la sortie
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        output = result.stdout
+# File to store results
+output_file = 'execution_times_mpi3.txt'
 
-        # Rechercher la ligne contenant "Elapsed time"
-        for line in output.splitlines():
+# Open the file to store execution times
+with open(output_file, 'w') as result_file:
+    result_file.write("Number of Processes, Elapsed Time (seconds)\n")
+
+    # Run the program for each number of processes
+    for num_procs in process_range:
+        print(f"Running with {num_procs} process(es)...")
+
+        # Use mpiexec or mpirun to execute the MPI program
+        result = subprocess.run(
+            ['mpiexec', '-n', str(num_procs), program_path],
+            capture_output=True,
+            text=True
+        )
+
+        # Print the standard output and error
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+
+        # Extract the elapsed time from the output
+        elapsed_time = None
+        for line in result.stdout.splitlines():
             if "Elapsed time" in line:
-                elapsed_time = float(line.split(":")[1].strip())
-                print(f"  Time for {iterations} iterations: {elapsed_time:.9f} seconds")
+                elapsed_time = line.split(":")[1].strip()
                 break
-    except subprocess.CalledProcessError as e:
-        print(f"  Error running with {iterations} iterations: {e}")
-        continue
+
+        # Write the number of processes and elapsed time to the file
+        if elapsed_time:
+            result_file.write(f"{num_procs}, {elapsed_time}\n")
+        else:
+            result_file.write(f"{num_procs}, Error in output\n")
+
+print(f"Execution times written to '{output_file}'.")

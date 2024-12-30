@@ -49,7 +49,7 @@ int main (int argc, char * * argv){
     double local_ymin = y_min + (rank) * (size_y);
     double local_ymax = local_ymin + size_y;
 
-    Compute (&im, nb_iter, x_min, x_max, local_ymax, local_ymin); //Compute the part of the image associated
+    Compute (&im, nb_iter, x_min, x_max, local_ymax, local_ymin); //Compute the part of the image associated to each CPU
 
     //printf("Processus %d: process lines [%d, %d] with y_min = %f and y_max = %f\n", rank, rank*loc_height, (rank + 1)*loc_height - 1, local_ymin, local_ymax);
 

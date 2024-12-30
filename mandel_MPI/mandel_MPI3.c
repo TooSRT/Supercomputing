@@ -61,7 +61,7 @@ int main (int argc, char **argv){
         } 
         //other CPU send their lines to CPU 0
         else{
-            MPI_Isend(im.pixels, width, MPI_CHAR, 0, rank + i * comm_size, MPI_COMM_WORLD, &request);
+            MPI_Isend(im.pixels, width, MPI_CHAR, 0, rank + i * comm_size, MPI_COMM_WORLD, &request); //use the line number as a tag
             MPI_Request_free(&request); //Free the request 
         }
     }
@@ -71,7 +71,7 @@ int main (int argc, char **argv){
         for (int proc = 1; proc<comm_size; proc++){ //use the processor as a tag
             for (int i = 0; i <height/comm_size; i++){ //loop on the number of line computed by each processors
                 //receive lines from others processors into CPU 0
-                MPI_Irecv(final_im.pixels + (proc + i * comm_size) * width, width, MPI_CHAR, proc, proc + i * comm_size, MPI_COMM_WORLD, &request_recv);
+                MPI_Irecv(final_im.pixels + (proc + i * comm_size) * width, width, MPI_CHAR, proc, proc + i * comm_size, MPI_COMM_WORLD, &request_recv); //use the line number as a tag
                 
                 MPI_Wait(&request_recv, &status); //Wait for the reception to complete
             }
