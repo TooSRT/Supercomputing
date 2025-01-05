@@ -54,7 +54,7 @@ int main (int argc, char * * argv){
     //printf("Processus %d: process lines [%d, %d] with y_min = %f and y_max = %f\n", rank, rank*loc_height, (rank + 1)*loc_height - 1, local_ymin, local_ymax);
 
     if (rank==0){
-        initialization(&final_im,width,height);
+        initialization(&final_im,width,height); //finial image inizialization (size height)
     }
     //collect all lines from other CPU with gather and send them in final_im
     MPI_Gather(im.pixels, width * loc_height, MPI_CHAR, final_im.pixels, width * loc_height, MPI_CHAR, 0, MPI_COMM_WORLD);

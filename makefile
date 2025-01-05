@@ -1,10 +1,13 @@
 CC = mpicc
+NVCC = nvcc
 CFLAGS = -Wall -I.  
 LDFLAGS =           
 
 MANDEL_DIR = mandel
 MANDEL_MPI_DIR = mandel_MPI
 MANDEL_OMP_DIR = mandel_OMP
+MANDEL_CUDA_DIR = mandel_CUDA
+CUDA_INCLUDE_DIR = /usr/local/cuda/include
 
 COMMON_SRC = function_mandel.c
 
@@ -15,6 +18,7 @@ MANDEL_MPI3_SRC = $(MANDEL_MPI_DIR)/mandel_MPI3.c
 MANDEL_MPI4_SRC = $(MANDEL_MPI_DIR)/mandel_MPI4.c  
 MANDEL_OMP_STATIC_SRC = $(MANDEL_OMP_DIR)/mandel_OMP_static.c
 MANDEL_OMP_DYNAMIC_SRC = $(MANDEL_OMP_DIR)/mandel_OMP_dynamic.c
+MANDEL_CUDA_SRC = $(MANDEL_CUDA_DIR)/mandel_CUDA.cu
 
 MANDEL_OBJ = $(COMMON_SRC:.c=.o) $(MANDEL_SRC:.c=.o)
 MANDEL_MPI_OBJ = $(COMMON_SRC:.c=.o) $(MANDEL_MPI_SRC:.c=.o)
@@ -29,8 +33,9 @@ MANDEL_MPI3_EXEC = mandel_MPI3.out
 MANDEL_MPI4_EXEC = mandel_MPI4.out  
 MANDEL_OMP_STATIC_EXEC = mandel_OMP_static.out
 MANDEL_OMP_DYNAMIC_EXEC = mandel_OMP_dynamic.out
+MANDEL_CUDA_EXEC = mandel_CUDA.out
 
-all: $(MANDEL_EXEC) $(MANDEL_MPI_EXEC) $(MANDEL_MPI2_EXEC) $(MANDEL_MPI3_EXEC) $(MANDEL_MPI4_EXEC) $(MANDEL_OMP_STATIC_EXEC) $(MANDEL_OMP_DYNAMIC_EXEC)
+all: $(MANDEL_EXEC) $(MANDEL_MPI_EXEC) $(MANDEL_MPI2_EXEC) $(MANDEL_MPI3_EXEC) $(MANDEL_MPI4_EXEC) $(MANDEL_OMP_STATIC_EXEC) $(MANDEL_OMP_DYNAMIC_EXEC) $(MANDEL_CUDA_EXEC)
 
 $(MANDEL_EXEC): $(MANDEL_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -53,6 +58,9 @@ $(MANDEL_OMP_STATIC_EXEC): $(MANDEL_OMP_STATIC_SRC) $(COMMON_SRC)
 $(MANDEL_OMP_DYNAMIC_EXEC): $(MANDEL_OMP_DYNAMIC_SRC) $(COMMON_SRC)
 	gcc -fopenmp $(CFLAGS) -o $@ $^
 
+$(MANDEL_CUDA_EXEC): $(MANDEL_CUDA_SRC) $(COMMON_SRC)
+	$(NVCC) -I. -Xcompiler -Wall -o $@ $^ $(LDFLAGS) function_mandel.o
+
 run_mandel: $(MANDEL_EXEC)
 	./$(MANDEL_EXEC) -f mandel.ppm
 
@@ -66,7 +74,7 @@ run_mandel_mpi3: $(MANDEL_MPI3_EXEC)
 	mpirun -np 6 ./$(MANDEL_MPI3_EXEC) -f mandel_mpi3.ppm
 
 run_mandel_mpi4: $(MANDEL_MPI4_EXEC) 
-	mpirun -np 6 ./$(MANDEL_MPI4_EXEC) -f mandel_mpi4.ppm
+	mpirun -np 1 ./$(MANDEL_MPI4_EXEC) -f mandel_mpi4.ppm
 
 run_mandel_omp_static: $(MANDEL_OMP_STATIC_EXEC)
 	./$(MANDEL_OMP_STATIC_EXEC) -f mandel_omp_static.ppm
@@ -74,12 +82,12 @@ run_mandel_omp_static: $(MANDEL_OMP_STATIC_EXEC)
 run_mandel_omp_dynamic: $(MANDEL_OMP_DYNAMIC_EXEC)
 	./$(MANDEL_OMP_DYNAMIC_EXEC) -f mandel_omp_dynamic.ppm
 
-run: run_mandel_mpi3
+run: run_mandel_mpi4 #run_mandel_mpi2 run_mandel_mpi3 run_mandel_mpi4 run_mandel_omp_dynamic run_mandel_omp_static
 
 clean:
 	rm -f $(MANDEL_EXEC) $(MANDEL_MPI_EXEC) $(MANDEL_MPI2_EXEC) \
-	      $(MANDEL_MPI3_EXEC) $(MANDEL_MPI4_EXEC) $(MANDEL_OMP_STATIC_EXEC) $(MANDEL_OMP_DYNAMIC_EXEC) \
+	      $(MANDEL_MPI3_EXEC) $(MANDEL_MPI4_EXEC) $(MANDEL_OMP_STATIC_EXEC) $(MANDEL_OMP_DYNAMIC_EXEC) $(MANDEL_CUDA_EXEC) \
 	      $(COMMON_SRC:.c=.o) $(MANDEL_SRC:.c=.o) $(MANDEL_MPI_SRC:.c=.o) \
 	      $(MANDEL_MPI2_SRC:.c=.o) $(MANDEL_MPI3_SRC:.c=.o) $(MANDEL_MPI4_SRC:.c=.o) *.ppm
 
-.PHONY: all clean run run_mandel run_mandel_mpi run_mandel_mpi2 run_mandel_omp_static run_mandel_omp_dynamic run_mandel_mpi3 run_mandel_mpi4
+.PHONY: all clean run run_mandel run_mandel_mpi run_mandel_mpi2 run_mandel_omp_static run_mandel_omp_dynamic run_mandel_mpi3 run_mandel_mpi4 run_mandel_cuda

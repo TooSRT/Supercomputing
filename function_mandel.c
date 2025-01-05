@@ -28,7 +28,7 @@ void analyzis (int argc, char * * argv, int * nb_iter, double * x_min, double * 
     int c ;
 
     /* Default values */
-    * nb_iter = 100;
+    * nb_iter = 1000;
     * x_min = X_MIN;
     * x_max = X_MAX;
     * y_min = Y_MIN;

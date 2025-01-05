@@ -55,7 +55,6 @@ int main (int argc, char * * argv){
             memcpy(final_im.pixels + (rank+ i * comm_size) * width, im.pixels, width); //store the data directly into final_image 
         }
 
-        //MPI_unpack cannot place directly all the line into the good position so we usea loop
         for (int proc=1; proc<comm_size; proc++){
             int position = 0; //reset position after each processor send their lines
             MPI_Recv(packed_im.pixels, width * (height/comm_size), MPI_PACKED, proc, 1, MPI_COMM_WORLD, &status); //receive the packed data computed by every other CPU than 0

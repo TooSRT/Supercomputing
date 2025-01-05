@@ -1,0 +1,33 @@
+Number of Processes, Elapsed Time (seconds)
+1, 317.776306152
+2, 158.738876343
+3, 191.160415649
+4, 129.227859497
+5, Error in output
+6, 96.824859619
+7, Error in output
+8, 77.230781555
+9, Error in output
+10, Error in output
+11, Error in output
+12, 53.552986145
+13, Error in output
+14, Error in output
+15, Error in output
+16, 40.878746033
+17, Error in output
+18, Error in output
+19, Error in output
+20, Error in output
+21, Error in output
+22, Error in output
+23, Error in output
+24, 27.517053604
+25, Error in output
+26, Error in output
+27, Error in output
+28, Error in output
+29, Error in output
+30, Error in output
+31, Error in output
+32, 20.942270279

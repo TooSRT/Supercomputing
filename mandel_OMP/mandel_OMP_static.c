@@ -31,15 +31,14 @@ int main(int argc,char **argv){
         initialization(&im, width, 1);
 
         #pragma omp for schedule(static, chunk_size) //use a for loop to use static
-        for (int i = 0; i < height; i++) {
-            double local_ymin = y_max - i * ((y_max - y_min) / height); //we have to avoid the use of num_proc for dynamic/static work
+        for (int i = 0; i < height; i++){
+            double local_ymin = y_max - i * ((y_max - y_min) / height); 
 
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //we compute one line so local_ymin = local_ymax
 
             memcpy(final_im.pixels + (i * width), im.pixels, width); //Copy the data into the final image
         }
-
-        free(im.pixels);
+        free(im.pixels); //free memory
     }
     
     clock_gettime ( CLOCK_MONOTONIC , & tend ) ;

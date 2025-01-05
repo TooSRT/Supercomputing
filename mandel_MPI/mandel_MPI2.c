@@ -23,10 +23,7 @@ int main (int argc, char * * argv){
     //mesure time taken
     struct timespec tstart , tend ;
     
-    //only CPU 0 save the data so only him need the analysis function
-    if (rank==0){   
-        analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
-    } 
+    analyzis(argc, argv, & nb_iter, & x_min, & x_max, & y_min, & y_max, & width, & height, & path);
 
     //Check that total size is divisible by the number of CPU 
     if (height % comm_size != 0){
@@ -39,6 +36,7 @@ int main (int argc, char * * argv){
 
     double local_ymin;
     initialization(&im, width, 1); //we compute lines so size 1
+    double size_y = (y_max - y_min) / height; //Size of each interval to compute for each processors
 
     //CPU 0 compute lines and put them together
     if (rank==0){
@@ -51,12 +49,12 @@ int main (int argc, char * * argv){
         //line computed by CPU0
         //don't need loop for CPU 0,just compute the block in one time so we can copy directly the memory into final_im
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + ( i * comm_size) * (y_max - y_min) / height; //k+i*n method for alterned line computation
+            local_ymin = y_min + ( i * comm_size) * size_y; //k+i*n method for alterned line computation
             
             //Compute the line into the image line buffer
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //local_ymax = local_ymin because line are size 1 in height
 
-            memcpy(final_im.pixels + (i * comm_size * width), im.pixels, width);
+            memcpy(final_im.pixels + (i * comm_size * width), im.pixels, width); //copy the pixel in the final image
         }
                 
         //receive the number of line from other CPU (total_lines_received= height - height/comm_size)
@@ -78,12 +76,12 @@ int main (int argc, char * * argv){
     //other CPU computes lines and send them to CPU 0 
     else{
         for (int i=0; i < (height/comm_size); i++){ //loop that iterate on every line of our image
-            local_ymin = y_min + (rank + i * comm_size) * (y_max - y_min) / height;
+            local_ymin = y_min + (rank + i * comm_size) * size_y;
             
             //we compute only one line so local_ymax=local_ymin
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin);
 
-            //Send computed line direclty
+            //Send computed line direclty, use the line as a tag
             MPI_Send(im.pixels, width, MPI_CHAR, 0, i, MPI_COMM_WORLD);
         }
     }
