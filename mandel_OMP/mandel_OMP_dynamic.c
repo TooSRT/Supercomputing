@@ -31,7 +31,7 @@ int main(int argc,char **argv){
         initialization(&im, width, 1);
 
         #pragma omp for schedule(dynamic, chunk_size) //use a for loop to use static
-        for (int i = 0; i < height; i++) {
+        for (int i = 0; i < height; i++){
             double local_ymin = y_max - i * ((y_max - y_min) / height); 
 
             Compute(&im, nb_iter, x_min, x_max, local_ymin, local_ymin); //we compute one line so local_ymin = local_ymax

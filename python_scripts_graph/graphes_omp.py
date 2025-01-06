@@ -1,66 +1,33 @@
-import subprocess
-import time
-import os
+import matplotlib.pyplot as plt
 
-# Liste des valeurs de N à tester
-n_value = 200000 # Fixer N à une valeur constante
-max_threads = 32  # Nombre maximum de threads à tester
+# Données pour OpenMP (nombre de threads et temps écoulé)
+threads = list(range(1, 33))  # Total threads de 1 à 32
+elapsed_time = [
+    315.65, 160.42, 108.31, 86.92, 66.50, 55.32, 48.12, 43.68, 43.09, 43.14,
+    43.19, 43.08, 43.26, 43.06, 43.18, 43.12, 43.09, 43.12, 43.07, 43.16,
+    43.17, 43.10, 43.09, 43.07, 43.10, 43.10, 43.08, 43.07, 43.11, 43.15,
+    43.10, 43.14
+]
 
-# Nom du fichier exécutable
-executable = "./mandel_OMP_static.out"
+# Temps d'exécution séquentiel (1 thread)
+sequential_time = elapsed_time[0]
 
-# Fichier de sortie temporaire
-output_file = "/tmp/test_mandel_omp.ppm"
+# Calcul du speed-up
+speed_up = [sequential_time / t for t in elapsed_time]
 
-# Résultats
-results = []
+# Speed-up idéal (scaling linéaire)
+ideal_speed_up = threads
 
-print(f"Démarrage des tests OpenMP pour N = {n_value} avec différents nombres de threads...\n")
+# Graphique Speed-up
+plt.figure(figsize=(12, 7))
+plt.plot(threads, speed_up, marker='o', linestyle='-', color='b', label='Mesured Speed-up')
+plt.plot(threads, ideal_speed_up, marker='o', linestyle='--', color='r', label='Ideal Speed-up')
 
-for num_threads in range(1, max_threads + 1):
-    print(f"Exécution avec {num_threads} thread(s)...")
-
-    # Définir le nombre de threads via la variable d'environnement
-    os.environ["OMP_NUM_THREADS"] = str(num_threads)
-
-    start_time = time.time()  # Début du chronométrage
-
-    # Commande pour exécuter le fichier avec les arguments nécessaires
-    try:
-        result = subprocess.run(
-            [executable, "-n", str(n_value), "-f", output_file],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        output = result.stdout  # Sortie standard (facultatif)
-    except subprocess.CalledProcessError as e:
-        print(f"Erreur lors de l'exécution avec {num_threads} thread(s): {e}")
-        results.append((num_threads, None))  # Ajouter un résultat d'erreur
-        continue
-
-    end_time = time.time()  # Fin du chronométrage
-    elapsed_time = end_time - start_time
-
-    print(f"Temps d'exécution avec {num_threads} thread(s): {elapsed_time:.2f} secondes")
-    results.append((num_threads, elapsed_time))
-
-print("\nTests terminés.\n")
-
-# Résumé des résultats
-print("Résumé des résultats :")
-for threads, elapsed_time in results:
-    if elapsed_time is not None:
-        print(f"{threads} thread(s): {elapsed_time:.2f} secondes")
-    else:
-        print(f"{threads} thread(s): Erreur")
-
-# Enregistrer les résultats dans un fichier
-with open("results_openmp_static_cs50.txt", "w") as f:
-    for threads, elapsed_time in results:
-        if elapsed_time is not None:
-            f.write(f"{threads} thread(s): {elapsed_time:.2f} secondes\n")
-        else:
-            f.write(f"{threads} thread(s): Erreur\n")
-
-print("\nLes résultats ont été sauvegardés dans 'results_openmp_threads_cs6.txt'.")
+# Ajout des labels, titre, et grille
+plt.xlabel('Number of Threads', fontsize=12)
+plt.ylabel('Speed-up', fontsize=12)
+plt.title('Speed-up vs Number of Threads (OpenMP Static, Chunk Size 50)', fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend(fontsize=12)
+plt.tight_layout()
+plt.show()

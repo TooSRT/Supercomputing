@@ -5,10 +5,10 @@
 #include <cuda_runtime.h>
 
 /* Bounds of the Mandelbrot set */
-#define X_MIN -1.78
-#define X_MAX 0.78
-#define Y_MIN -0.96
-#define Y_MAX 0.96
+#define X_MIN 0.37500012006
+#define X_MAX 0.375000120064
+#define Y_MIN -0.216639388440
+#define Y_MAX -0.216639388436
 
 typedef struct {
     int nb_rows, nb_columns; /* Dimensions */
@@ -30,13 +30,13 @@ void analyzis(int argc, char **argv, int *nb_iter, double *x_min, double *x_max,
     int c;
 
     /* Default values */
-    *nb_iter = 200000;
+    *nb_iter = 1000000;
     *x_min = X_MIN;
     *x_max = X_MAX;
     *y_min = Y_MIN;
     *y_max = Y_MAX;
-    *width = 1024;
-    *height = 768;
+    *width = 4096;
+    *height = 2160;
     *path = "mandel_cuda.ppm";  // Assign directly to a const char*
 
     /* Analysis of arguments */
@@ -85,25 +85,21 @@ void save (const Image * im, const char * path) {
 
 //Cuda function
 __global__ void Compute(char *pixels, int nb_columns, int nb_rows, int nb_iter, double x_min, double x_max, double y_min, double y_max){
-    int pos = blockIdx.x * blockDim.x + threadIdx.x; //index of a thread in our grid 
+    int pos = blockIdx.x * blockDim.x + threadIdx.x; //index of a thread in our grid (1D)
 
     if (pos >= nb_rows * nb_columns) return; // check that we are in the grid
 
-    //INdex of our lines and columns
-    int l = pos/nb_columns; 
-    int c = pos%nb_columns;  
+    //INdex of our lines and columns (2D)
+    int l = pos/nb_columns; //determine at which line the pixel belong
+    int c = pos%nb_columns; //determine at which column the pixel belong
 
     //In Cuda we don't need loop anymore, every thread is associated to the computation of a pixel
-    /* Discretization */
-    double dx = (x_max - x_min) / nb_columns;
-    double dy = (y_max - y_min) / nb_rows;
+    double dx = (x_max - x_min) / nb_columns, dy = (y_max - y_min) / nb_rows;     /* Discretization */
 
     /* Computation at each point of the image */
-    double a = x_min + c * dx;
-    double b = y_max - l * dy;
-    double x = 0, y = 0;
+    double a = x_min + c * dx, b = y_max - l * dy, x = 0, y = 0;
+    
     int i = 0;
-
     while (i < nb_iter) {
         double tmp = x;
         x = x * x - y * y + a;
@@ -117,10 +113,10 @@ __global__ void Compute(char *pixels, int nb_columns, int nb_rows, int nb_iter, 
     pixels[pos] = (char)((i * 255)/nb_iter);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv){
     int nb_iter, width, height;
     double x_min, x_max, y_min, y_max;
-    const char *path;  // Declare as const char*
+    const char *path; 
     Image im;
 
     struct timespec tstart, tend, tstart_copy, tend_copy, tstart_kernel, tend_kernel;
@@ -136,8 +132,8 @@ int main(int argc, char **argv) {
     //------Time for memory allocation and copying to the GPU------
     clock_gettime(CLOCK_MONOTONIC, &tstart_copy);
 
-    cudaMalloc((void **)&d_pixels, size);     //Allocation of memory into the GPU to sotre pixels
-    cudaMemcpy(d_pixels, im.pixels, size, cudaMemcpyHostToDevice); //Copy of the memory into the GPU
+    cudaMalloc((void **)&d_pixels, size);     // Allocation of memory into the GPU to store pixels
+    cudaMemcpy(d_pixels, im.pixels, size, cudaMemcpyHostToDevice); // Copy of the memory into the GPU
 
     clock_gettime(CLOCK_MONOTONIC, &tend_copy);
 
@@ -145,12 +141,12 @@ int main(int argc, char **argv) {
     double elap_copy_time = (tend_copy.tv_sec - tstart_copy.tv_sec) + (tend_copy.tv_nsec - tstart_copy.tv_nsec)/1e9f;
     printf("Time taken for memory copy to GPU: %2.9lf seconds\n", elap_copy_time);
 
-    //Define block and grid
-    int total_pixels = width * height; //total pixels of the image
+    // Define block and grid
+    int total_pixels = width * height; // total pixels of the image
     int threads_per_block = 256; // we choose 256 threads per block (arbitrary)
-    int num_blocks = (total_pixels + threads_per_block - 1)/threads_per_block; //total block needed to cover all the pixels
+    int num_blocks = (total_pixels + threads_per_block - 1)/threads_per_block; // total block needed to cover all the pixels
 
-    //Measure time taken for GPU computation
+    // Measure time taken for GPU computation
     //------------------------------------------------
     clock_gettime(CLOCK_MONOTONIC, &tstart_kernel);
 
@@ -160,17 +156,25 @@ int main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC, &tend_kernel); 
     //-------------------------------------------------
 
-    //------Measure time taken for GPU computation------
     double elap_kernel_time = (tend_kernel.tv_sec - tstart_kernel.tv_sec) + (tend_kernel.tv_nsec - tstart_kernel.tv_nsec)/1e9f;
     printf("Time taken for GPU computation: %2.9lf seconds\n", elap_kernel_time);
 
-    //Copy the result to the CPU
+    //------Measure time for copying data from GPU to CPU------
+    clock_gettime(CLOCK_MONOTONIC, &tstart_copy);
+
+    // Copy the result to the CPU
     cudaMemcpy(im.pixels, d_pixels, size, cudaMemcpyDeviceToHost);
+
+    clock_gettime(CLOCK_MONOTONIC, &tend_copy);
+
+    // --------------------------------------------------------
+    double elap_copy_to_host_time = (tend_copy.tv_sec - tstart_copy.tv_sec) + (tend_copy.tv_nsec - tstart_copy.tv_nsec)/1e9f;
+    printf("Time taken for memory copy from GPU to CPU: %2.9lf seconds\n", elap_copy_to_host_time);
 
     //Save the final image
     save(&im, path);
 
-    // Free memory on the GPU
+    //Free memory on the GPU
     cudaFree(d_pixels);
 
     //--------Measure total time taken--------
@@ -178,5 +182,4 @@ int main(int argc, char **argv) {
     double elap_time = (tend.tv_sec - tstart.tv_sec) + (tend.tv_nsec - tstart.tv_nsec)/1e9f;
     printf("Total elapsed time: %2.9lf seconds\n", elap_time);
 
-    return 0;
 }

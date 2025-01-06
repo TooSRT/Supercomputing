@@ -1,13 +1,13 @@
 import subprocess
 
 # Path to your compiled MPI program
-program_path = './mandel_MPI.out'
+program_path = './mandel_MPI3.out'
 
 # Range of processes to test (from 1 to 32)
-process_range = range(1, 33)
+process_range = range(1, 8)
 
 # File to store results
-output_file = 'execution_times_mpi_500000.txt'
+output_file = 'test_MPI.txt'
 
 # Open the file to store execution times
 with open(output_file, 'w') as result_file:

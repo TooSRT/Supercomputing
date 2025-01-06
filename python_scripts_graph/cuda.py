@@ -16,8 +16,8 @@ def run_mandelbrot(nb_iter, width, height, output_file="mandel_cuda.ppm"):
     return end_time - start_time  # Return elapsed time in seconds
 
 # Configuration values for testing
-nb_iter_values = [100,1000, 10000, 25000, 50000,75000,100000,150000,200000]  # Different iteration values (precision)
-image_sizes = [(512, 512), (1024, 768), (2048, 1536)]  # Different image sizes
+nb_iter_values = [100000,200000,500000,1000000,5000000]  # Different iteration values (precision)
+image_sizes = [(1024, 768), (4096, 2160)]  # Different image sizes
 
 # Create a directory for results if it doesn't exist
 if not os.path.exists("results"):

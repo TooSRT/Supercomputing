@@ -85,7 +85,6 @@ int main (int argc, char * * argv){
         }
 
         //Only CPU 1 send the packed lines to CPU 0
-        //maybe all cpu send data and not the one only ?
         MPI_Send(packed_im.pixels, position, MPI_PACKED, 0, 1, MPI_COMM_WORLD); //send the packed data that have (height - height/comm_size) lines
     }
     free(packed_im.pixels); //free the memory for packed lines

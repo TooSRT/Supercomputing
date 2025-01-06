@@ -52,3 +52,13 @@ Iterations: 150000, Size: 2048x1536, Time: 0.590337 seconds
 Iterations: 200000, Size: 512x512, Time: 0.290377 seconds
 Iterations: 200000, Size: 1024x768, Time: 0.430081 seconds
 Iterations: 200000, Size: 2048x1536, Time: 0.708308 seconds
+Iterations: 100000, Size: 1024x768, Time: 0.531833 seconds
+Iterations: 100000, Size: 4096x2160, Time: 1.460094 seconds
+Iterations: 200000, Size: 1024x768, Time: 0.738030 seconds
+Iterations: 200000, Size: 4096x2160, Time: 2.457612 seconds
+Iterations: 500000, Size: 1024x768, Time: 1.483421 seconds
+Iterations: 500000, Size: 4096x2160, Time: 5.107799 seconds
+Iterations: 1000000, Size: 1024x768, Time: 2.614896 seconds
+Iterations: 1000000, Size: 4096x2160, Time: 9.114429 seconds
+Iterations: 5000000, Size: 1024x768, Time: 9.285990 seconds
+Iterations: 5000000, Size: 4096x2160, Time: 31.698821 seconds
